@@ -12,6 +12,7 @@ import com.facebook.jni.HybridData;
 import com.facebook.jni.annotations.DoNotStrip;
 import com.facebook.soloader.nativeloader.NativeLoader;
 import org.pytorch.executorch.annotations.Experimental;
+import org.pytorch.executorch.Runtime;
 
 /**
  * Interface for the native peer object for entry points to the Module
@@ -21,8 +22,9 @@ import org.pytorch.executorch.annotations.Experimental;
 @Experimental
 class NativePeer {
   static {
-    // Loads libexecutorch.so from jniLibs
-    NativeLoader.loadLibrary("executorch");
+    if (!Runtime.isInitialized()) {
+        throw new IllegalStateException("ExecuTorch runtime not initialized.");
+    }
   }
 
   private final HybridData mHybridData;
