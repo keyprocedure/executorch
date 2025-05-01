@@ -16,6 +16,7 @@ import torch
 from executorch.exir import ExecutorchBackendConfig, to_edge
 from executorch.exir.dialects._ops import ops as exir_ops
 from executorch.exir.memory_planning import (
+    _do_user_inputs_exist,
     filter_nodes,
     get_node_tensor_specs,
     greedy,
@@ -788,3 +789,21 @@ class TestMisc(unittest.TestCase):
             .val.allocation_info,  # pyright: ignore
             None,
         )
+
+    def test_do_user_inputs_exist(self) -> None:
+        self.assertFalse(_do_user_inputs_exist(None))
+
+        class IntModel(torch.nn.Module):
+            def forward(self, a: int, b: int):
+                return torch.tensor(a + b)
+
+        inputs = (1, 2)
+        ep = export(IntModel(), inputs, strict=True)
+        self.assertFalse(_do_user_inputs_exist(ep.graph_signature))
+
+        class TensorModel(torch.nn.Module):
+            def forward(self, x: torch.Tensor):
+                return x
+
+        ep = export(TensorModel(), (torch.ones(3),), strict=True)
+        self.assertTrue(_do_user_inputs_exist(ep.graph_signature))

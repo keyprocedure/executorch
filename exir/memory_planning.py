@@ -26,6 +26,7 @@ from executorch.exir.tensor import TensorSpec
 
 from torch import fx
 from torch.export.exported_program import ExportGraphSignature, InputKind
+from torch.export.graph_signature import TensorArgument
 from torch.fx import Node
 from torch.utils._pytree import tree_flatten
 
@@ -335,19 +336,16 @@ def _is_mutable_buffer(
 
 
 def _do_user_inputs_exist(graph_signature: Optional[ExportGraphSignature]) -> bool:
+    """
+    Checks if there is at least one tensor USER_INPUT in the graph signature.
+    """
     if graph_signature is None:
         return False
 
-    return (
-        len(
-            list(
-                filter(
-                    lambda input: input.kind == InputKind.USER_INPUT,
-                    graph_signature.input_specs,
-                )
-            )
-        )
-    ) > 0
+    return any(
+        spec.kind == InputKind.USER_INPUT and isinstance(spec.arg, TensorArgument)
+        for spec in graph_signature.input_specs
+    )
 
 
 def get_graph_input_tensors(
